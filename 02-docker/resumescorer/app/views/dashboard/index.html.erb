@@ -114,3 +114,16 @@
         class: "text-indigo-600 hover:underline" %>
   </div>
 <% end %>
+
+<% if @jobs.any?(&:processing?) %>
+  <div id="auto-refresh-bar"
+       class="fixed bottom-4 right-4 bg-indigo-700 text-white text-xs px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+    <span class="inline-block w-2 h-2 bg-white rounded-full animate-pulse"></span>
+    <span id="auto-refresh-label">Scoring in progress — refreshing…</span>
+  </div>
+  <script>
+    // Reload every 5 s while jobs are pending/scoring.
+    // Server decides when to stop by omitting this block.
+    setTimeout(function() { window.location.reload(); }, 5000);
+  </script>
+<% end %>
