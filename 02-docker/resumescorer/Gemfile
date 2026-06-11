@@ -25,8 +25,6 @@ gem "aws-sdk-bedrockruntime"
 # HTML parsing for URL-based job extraction
 gem "nokogiri"
 
-# PDF text extraction for resume content
-gem "pdf-reader"
 
 group :development, :test do
   gem "debug", platforms: %i[mri windows]

@@ -18,9 +18,7 @@ class ResumesController < ApplicationController
     authorize Resume
     @resume = current_user.resumes.build(resume_params)
     if @resume.save
-      @resume.file.attach(params[:resume][:file]) if params.dig(:resume, :file)
-      @resume.extract_and_store_text
-      redirect_to resumes_path, notice: "Resume uploaded successfully."
+      redirect_to resumes_path, notice: "Resume saved."
     else
       render :new, status: :unprocessable_entity
     end
@@ -36,6 +34,6 @@ class ResumesController < ApplicationController
   private
 
   def resume_params
-    params.require(:resume).permit(:name)
+    params.require(:resume).permit(:name, :content_text)
   end
 end

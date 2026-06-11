@@ -60,15 +60,19 @@
   </div>
 
   <script>
-    const modal   = document.getElementById("confirm-modal");
-    const message = document.getElementById("confirm-message");
-    const okBtn   = document.getElementById("confirm-ok");
+    const modal     = document.getElementById("confirm-modal");
+    const message   = document.getElementById("confirm-message");
+    const okBtn     = document.getElementById("confirm-ok");
     const cancelBtn = document.getElementById("confirm-cancel");
     let pendingForm = null;
 
-    document.addEventListener("submit", function(e) {
-      const form = e.target;
-      if (!form.dataset.confirm) return;
+    // Intercept clicks on submit buttons inside forms with data-confirm.
+    // Click events bubble reliably; submit events do not in all browsers.
+    document.addEventListener("click", function(e) {
+      const btn = e.target.closest("input[type=submit], button[type=submit]");
+      if (!btn) return;
+      const form = btn.closest("form[data-confirm]");
+      if (!form) return;
       e.preventDefault();
       message.textContent = form.dataset.confirm;
       pendingForm = form;
@@ -77,7 +81,11 @@
 
     okBtn.addEventListener("click", function() {
       modal.classList.add("hidden");
-      if (pendingForm) { pendingForm.dataset.confirm = ""; pendingForm.submit(); }
+      if (pendingForm) {
+        // form.submit() bypasses event listeners — no re-intercept risk
+        pendingForm.submit();
+        pendingForm = null;
+      }
     });
 
     cancelBtn.addEventListener("click", function() {
