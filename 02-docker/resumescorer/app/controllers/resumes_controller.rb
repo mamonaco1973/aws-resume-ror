@@ -4,6 +4,11 @@ class ResumesController < ApplicationController
     @resumes = current_user.resumes.order(created_at: :desc)
   end
 
+  def show
+    @resume = current_user.resumes.find(params[:id])
+    authorize @resume
+  end
+
   def new
     authorize Resume
     @resume = Resume.new

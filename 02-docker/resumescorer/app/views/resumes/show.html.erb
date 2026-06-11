@@ -1,0 +1,29 @@
+<div class="max-w-3xl">
+  <div class="mb-4">
+    <%= link_to "← My Resumes", resumes_path, class: "text-indigo-600 hover:underline text-sm" %>
+  </div>
+
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold text-gray-800"><%= @resume.name %></h1>
+    <% if @resume.file.attached? %>
+      <%= link_to "Download File",
+          rails_blob_path(@resume.file, disposition: "attachment"),
+          class: "text-sm text-indigo-600 hover:underline" %>
+    <% end %>
+  </div>
+
+  <div class="bg-white border border-gray-200 rounded-lg p-6">
+    <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Extracted Text</h2>
+
+    <% if @resume.content_text.present? %>
+      <p class="text-xs text-gray-400 mb-3"><%= @resume.content_text.length %> characters extracted</p>
+      <pre class="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded p-4 overflow-auto max-h-[32rem]"><%= @resume.content_text %></pre>
+      <p class="text-xs text-gray-400 mt-3">If this looks wrong, delete this resume and re-upload a plain-text or cleaner PDF version.</p>
+    <% else %>
+      <div class="text-center py-10 text-gray-400">
+        <p>No text was extracted from this resume.</p>
+        <p class="text-xs mt-1">Delete it and try uploading a plain-text PDF or .txt file.</p>
+      </div>
+    <% end %>
+  </div>
+</div>

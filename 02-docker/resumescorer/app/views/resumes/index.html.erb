@@ -19,7 +19,10 @@
       <tbody class="divide-y divide-gray-100">
         <% @resumes.each do |resume| %>
           <tr class="hover:bg-gray-50">
-            <td class="px-5 py-3 font-medium text-gray-800"><%= resume.name %></td>
+            <td class="px-5 py-3 font-medium text-gray-800">
+              <%= link_to resume.name, resume_path(resume),
+                  class: "text-indigo-600 hover:underline" %>
+            </td>
             <td class="px-5 py-3">
               <% if resume.file.attached? %>
                 <%= link_to resume.file.filename,
