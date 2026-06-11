@@ -21,7 +21,13 @@ class JobsController < ApplicationController
 
   def create
     authorize Job
-    resume = current_user.resumes.find(params[:job][:resume_id])
+    resume = current_user.resumes.find_by(id: params[:job][:resume_id])
+
+    if resume.nil?
+      redirect_to new_resume_path, alert: "Add a resume before scoring jobs."
+      return
+    end
+
     folder_id = params[:job][:folder_id].presence
 
     if params[:job][:source_type] == "linkedin_id"
