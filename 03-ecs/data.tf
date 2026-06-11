@@ -57,3 +57,11 @@ data "aws_secretsmanager_secret" "secret_key_base" {
 data "aws_secretsmanager_secret" "bedrock_model_id" {
   name = "resumescorer_bedrock_model_id"
 }
+
+data "aws_secretsmanager_secret" "smtp_user" {
+  name = "resumescorer_smtp_user"
+}
+
+data "aws_secretsmanager_secret" "smtp_password" {
+  name = "resumescorer_smtp_password"
+}

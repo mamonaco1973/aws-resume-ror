@@ -19,3 +19,33 @@ variable "db_username" {
   type        = string
   default     = "resumescorer"
 }
+
+variable "smtp_user" {
+  description = "SMTP username for Devise password reset emails"
+  type        = string
+  sensitive   = true
+}
+
+variable "smtp_password" {
+  description = "SMTP password for Devise password reset emails"
+  type        = string
+  sensitive   = true
+}
+
+variable "smtp_server" {
+  description = "SMTP server hostname"
+  type        = string
+  default     = "smtp.improvmx.com"
+}
+
+variable "smtp_port" {
+  description = "SMTP server port"
+  type        = string
+  default     = "587"
+}
+
+variable "app_host" {
+  description = "Public hostname for Devise password reset links (ALB DNS)"
+  type        = string
+  default     = ""
+}

@@ -1,19 +1,19 @@
-# AWS Job Board — Ruby on Rails on ECS Fargate
+# AWS Resume Scorer — Ruby on Rails on ECS Fargate
 
-This project delivers a fully functional **job board web application** on AWS,
-built with **Ruby on Rails 7.1**, deployed as a **Docker container on Amazon
-ECS Fargate**, and backed by **Amazon RDS (PostgreSQL)**, **Amazon ElastiCache
-(Redis)**, and **Amazon S3**.
+This project delivers a fully functional **AI-powered resume scoring
+application** on AWS, built with **Ruby on Rails 7.1**, deployed as a
+**Docker container on Amazon ECS Fargate**, and backed by **Amazon RDS
+(PostgreSQL)**, **Amazon ElastiCache (Redis)**, **Amazon S3**, and
+**AWS Bedrock (Claude Haiku)**.
+
+Users upload resumes and submit job postings (by URL or pasted text).
+Bedrock scores each resume against the job (0–100) with an Overview,
+Strengths, and Weaknesses analysis. Scoring runs asynchronously via Sidekiq
+so the UI stays responsive while the AI works.
 
 It uses **Terraform** to provision all infrastructure and a single `apply.sh`
 script to build and deploy the entire stack end-to-end — from VPC and database
 to container image and running ECS service.
-
-The application supports two user roles: **Candidates** browse and apply for
-jobs, uploading PDF resumes via ActiveStorage to S3. **Employers** create
-company profiles, post jobs, and review incoming applications with status
-management. Background notifications are sent via **Sidekiq** workers backed
-by Redis.
 
 Authentication is handled by **Devise** (bcrypt sessions) and authorization by
 **Pundit** policy objects — no external identity provider required.
@@ -22,30 +22,31 @@ Authentication is handled by **Devise** (bcrypt sessions) and authorization by
 
 1. **Ruby on Rails MVC Application** — Full Rails 7.1 stack with ActiveRecord,
    Devise authentication, Pundit authorization, ActiveStorage file uploads,
-   Sidekiq background jobs, and ActionMailer notifications.
-2. **Role-Based Authorization** — Two distinct roles (Candidate, Employer) with
-   Pundit policy objects enforcing per-resource access control throughout the
-   application.
-3. **File Uploads to S3** — Candidates attach PDF/Word resumes via
+   and Sidekiq background jobs.
+2. **AWS Bedrock AI Integration** — Two-call Claude Haiku pipeline: extract
+   title/company/description from a URL or raw text, then score the resume
+   against the extracted job description. All calls are made from a Sidekiq
+   worker using the `aws-sdk-bedrockruntime` gem.
+3. **Token Usage Tracking** — Each user has a lifetime token budget (default
+   100,000). Bedrock token counts accumulate after each call using a
+   thread-safe SQL increment. A usage ring on the dashboard shows consumption.
+4. **File Uploads to S3** — Resumes and job attachments are stored via
    ActiveStorage. The ECS task IAM role grants S3 access — no long-lived
    credentials in the application.
-4. **Background Job Processing** — Sidekiq processes application notification
-   jobs from a Redis queue. Sidekiq runs in the same container as Puma for
-   demo simplicity; a natural interview talking point for production separation.
-5. **ECS Fargate Container Deployment** — The Rails app runs serverlessly on
-   Fargate with no EC2 instances to manage. The ECS task pulls secrets from
-   Secrets Manager at startup — credentials never touch the image.
-6. **RDS PostgreSQL + ElastiCache Redis** — A managed PostgreSQL database
-   stores all application data. Redis backs the Sidekiq queue and Action Cable.
-7. **Terraform Infrastructure as Code** — All AWS resources (VPC, RDS,
-   ElastiCache, ECR, S3, Secrets Manager, ALB, ECS) are provisioned in two
+5. **Background Job Processing** — Sidekiq runs in the same container as Puma,
+   processing `ScoringJob` from a Redis queue. A natural talking point for
+   production separation of web and worker tiers.
+6. **ECS Fargate Container Deployment** — Rails runs serverlessly on Fargate
+   with no EC2 instances to manage. All secrets are injected from Secrets
+   Manager at task startup — credentials never touch the image.
+7. **RDS PostgreSQL + ElastiCache Redis** — Managed PostgreSQL stores all
+   application data. Redis backs the Sidekiq queue.
+8. **Terraform Infrastructure as Code** — All AWS resources (VPC, RDS,
+   ElastiCache, ECR, S3, Secrets Manager, ALB, ECS) provisioned in three
    Terraform phases with explicit dependency ordering.
-8. **Database Migrations on Deploy** — `rails db:prepare` runs in the container
-   entrypoint on startup, applying all ActiveRecord migrations before Puma
-   accepts traffic.
-9. **Seed Data** — The database is seeded with demo employers, companies, jobs,
-   and candidates on first deploy, providing a fully populated application
-   immediately.
+9. **Database Migrations on Deploy** — `rails db:prepare` runs in the
+   container entrypoint on startup, applying all ActiveRecord migrations
+   before Puma accepts traffic.
 
 ## Architecture
 
@@ -58,15 +59,19 @@ Application Load Balancer (public subnets, port 80)
     ▼
 ECS Fargate Task (private subnets, port 3000)
   ├── Puma (Rails web server)
-  └── Sidekiq (background worker, Redis queue)
+  └── Sidekiq (ScoringJob worker, Redis queue)
+         │
+         ▼
+    AWS Bedrock (Claude Haiku — extract + score)
     │                   │
     ▼                   ▼
 RDS PostgreSQL     ElastiCache Redis
 (private subnet)   (private subnet)
     │
     ▼
-S3 (ActiveStorage resume uploads)
-Secrets Manager (DATABASE_URL, REDIS_URL, SECRET_KEY_BASE)
+S3 (ActiveStorage — resumes + attachments)
+Secrets Manager (DATABASE_URL, REDIS_URL, SECRET_KEY_BASE,
+                 BEDROCK_MODEL_ID, SMTP_USER, SMTP_PASSWORD)
 ECR (container image)
 ```
 
@@ -77,18 +82,32 @@ ECR (container image)
 * [Install Terraform](https://developer.hashicorp.com/terraform/install)
 * [Install Docker](https://docs.docker.com/engine/install/)
 * [Install jq](https://jqlang.github.io/jq/download/)
+* Bedrock model access enabled in `us-east-1` for Claude Haiku
 
 Region is hardcoded to `us-east-1`.
 
-If this is your first time using AWS with Terraform, we recommend starting with
-this video:
+If this is your first time using AWS with Terraform, we recommend starting
+with this video:
 **[AWS + Terraform: Easy Setup](https://www.youtube.com/watch?v=9clW3VQLyxA)**
+
+### Optional: SMTP (Forgot Password)
+
+Devise's password-reset email requires an SMTP relay. Export these before
+running `apply.sh`; if unset the app deploys normally but password-reset
+emails will silently fail:
+
+```bash
+export SMTP_SERVER="smtp.improvmx.com"
+export SMTP_PORT=587
+export SMTP_USER="your-smtp-user"
+export SMTP_PASSWORD="your-smtp-password"
+```
 
 ## Download this Repository
 
 ```bash
-git clone https://github.com/mamonaco1973/aws-jobs-board.git
-cd aws-jobs-board
+git clone https://github.com/mamonaco1973/aws-resume-app-ror.git
+cd aws-resume-app-ror
 ```
 
 ## Build the Code
@@ -97,7 +116,7 @@ Run [check_env](check_env.sh) to validate your environment, then run
 [apply](apply.sh) to provision all infrastructure and deploy the application.
 
 ```bash
-~/aws-jobs-board$ ./apply.sh
+~/aws-resume-app-ror$ ./apply.sh
 NOTE: Running environment validation...
 NOTE: Validating that required commands are found in your PATH.
 NOTE: aws is found in the current PATH.
@@ -112,11 +131,10 @@ NOTE: Building and pushing Docker image to ECR...
 NOTE: Deploying ECS Fargate cluster and service...
 ...
 NOTE: Waiting for http://<alb-dns>/users/sign_in to return HTTP 200...
-NOTE: JobBoard is healthy (HTTP 200).
+NOTE: Resume Scorer is healthy (HTTP 200).
 NOTE: Deployment complete.
-NOTE: JobBoard URL:           http://<alb-dns>
-NOTE: Candidate login:        candidate1@example.com / password123
-NOTE: Employer login:         employer1@example.com  / password123
+NOTE: Resume Scorer URL:  http://<alb-dns>
+NOTE: Demo login:         demo@example.com / password123
 ```
 
 `apply.sh` runs four phases in order:
@@ -124,15 +142,17 @@ NOTE: Employer login:         employer1@example.com  / password123
 1. **Phase 1 — Network Infrastructure** (`01-network/`): Provisions VPC,
    subnets, Internet Gateway, NAT Gateway, RDS PostgreSQL 16, ElastiCache
    Redis 7, ECR repository, S3 bucket for uploads, and Secrets Manager entries
-   for all credentials.
+   for all credentials (including SMTP if provided).
 2. **Phase 2 — Docker Build** (`02-docker/jobboard/`): Builds the Rails
    container image and pushes it to ECR.
 3. **Phase 3 — ECS Fargate** (`03-ecs/`): Deploys the ECS cluster, ALB,
    target group, task definition, and ECS service. Secrets Manager ARNs are
    wired into the task definition so credentials are injected at task startup.
-4. **Phase 4 — Validation**: Polls the ALB health endpoint until Rails responds
-   HTTP 200. Fargate tasks need ~5–10 minutes to start, run migrations, and
-   join the target group.
+   A second Terraform pass re-applies with `APP_HOST` set to the ALB DNS name
+   so Devise password-reset links resolve correctly.
+4. **Phase 4 — Validation**: Polls the ALB health endpoint until Rails
+   responds HTTP 200. Fargate tasks need ~5–10 minutes to start, run
+   migrations, and join the target group.
 
 ### Build Results
 
@@ -149,13 +169,13 @@ When deployment completes, the following resources exist in `us-east-1`:
   - Full Rails schema created by `rails db:prepare` on first container start
 
 - **Storage:**
-  - S3 bucket (`jobboard-uploads-<random>`) for ActiveStorage resume files
+  - S3 bucket (`resumescorer-uploads-<random>`) for ActiveStorage files
   - Public access blocked; IAM role grants ECS task read/write access
 
 - **Container Infrastructure:**
-  - ECR repository `jobboard` holding the Rails application image
-  - ECS Fargate cluster with Container Insights enabled
-  - CloudWatch log group `/ecs/jobboard` (7-day retention)
+  - ECR repository `resumescorer` holding the Rails application image
+  - ECS Fargate cluster (1 vCPU / 2 GB) with Container Insights enabled
+  - CloudWatch log group `/ecs/resumescorer` (7-day retention)
 
 - **Application Load Balancer:**
   - ALB in public subnets, port 80 forwarding to ECS tasks on port 3000
@@ -164,55 +184,56 @@ When deployment completes, the following resources exist in `us-east-1`:
 - **Security & IAM:**
   - ALB security group (port 80 inbound from internet)
   - ECS task security group (port 3000 from ALB only; RDS/Redis from VPC CIDR)
-  - ECS task execution role: pull from ECR, write CloudWatch, read 3 secrets
-  - ECS task runtime role: S3 read/write on uploads bucket, SSM for ECS Exec
+  - ECS task execution role: pull from ECR, write CloudWatch, read 6 secrets
+  - ECS task runtime role: S3 read/write, Bedrock `InvokeModel`, SSM ECS Exec
 
 - **Secrets Manager:**
-  - `jobboard_database_url` — full `postgresql://` connection string
-  - `jobboard_redis_url` — `redis://` endpoint with database index
-  - `jobboard_secret_key_base` — 128-character random key for Rails sessions
+  - `resumescorer_database_url` — full `postgresql://` connection string
+  - `resumescorer_redis_url` — `redis://` endpoint with database index
+  - `resumescorer_secret_key_base` — 128-character random key for Rails sessions
+  - `resumescorer_bedrock_model_id` — Claude Haiku model ID string
+  - `resumescorer_smtp_user` — SMTP username (empty if not provided)
+  - `resumescorer_smtp_password` — SMTP password (empty if not provided)
 
-## Demo Users
+## Demo User
 
-Seed data is loaded automatically on first deploy. All accounts use password
-`password123`.
+Seed data is loaded automatically on first deploy.
 
-| Email | Role | Notes |
+| Email | Password | Notes |
 |---|---|---|
-| `employer1@example.com` | Employer | Owns Acme Corp, 3 jobs posted |
-| `employer2@example.com` | Employer | Owns Globex Industries, 3 jobs posted |
-| `candidate1@example.com` | Candidate | Can apply to any job |
-| `candidate2@example.com` | Candidate | Can apply to any job |
+| `demo@example.com` | `password123` | 2 resumes, 2 folders, 2 pre-scored jobs |
 
-You can also register new accounts at `/users/sign_up` and choose a role at
-registration time.
+You can register additional accounts at `/users/sign_up`.
 
 ## Using the Application
 
-### As a Candidate
+### Upload a Resume
 
-1. Sign in as `candidate1@example.com` (or register a new Candidate account).
-2. Browse the job listings at the home page. Use the keyword and location
-   search fields to filter.
-3. Click a job title to view the full description and salary range.
-4. Click **Apply** to open the application form. Write a cover letter and
-   attach your resume (PDF or Word, any size).
-5. Submit — the employer receives an email notification via Sidekiq.
-6. You cannot apply to the same job twice; the Apply button is replaced with
-   an "Already Applied" notice on subsequent visits.
+1. Sign in and navigate to **Resumes** in the nav bar.
+2. Click **New Resume**, give it a name, and attach a PDF file.
+3. The app extracts text from the PDF at upload time using `pdf-reader` and
+   stores it in the database — no re-reads at scoring time.
 
-### As an Employer
+### Score a Job
 
-1. Sign in as `employer1@example.com` (or register a new Employer account).
-2. On first login you are prompted to create a company profile if one does not
-   exist. Fill in the company name, location, website, and description.
-3. Post new jobs from the job listing page using **Post a Job**.
-4. Navigate to **Employer Dashboard** to see all your posted jobs and the
-   number of applications received.
-5. Click a job in the dashboard to see each application, the candidate's cover
-   letter, and a link to download their uploaded resume.
-6. Update an application's status (Pending → Reviewed → Accepted / Rejected)
-   from the application detail page.
+1. Navigate to **Score a Job**.
+2. Choose a source: paste a job URL or paste raw job text directly.
+3. Select the resume to score against and optionally assign a folder.
+4. Submit — the job appears immediately with status `pending`, then `scoring`,
+   then `scored` as Sidekiq processes it in the background.
+
+### View Results
+
+- The **Dashboard** shows all scored jobs with color-coded score badges
+  (green ≥ 75, yellow ≥ 50, red below 50) and a token usage ring.
+- Click a job to see the full AI analysis (Overview, Strengths, Weaknesses),
+  add personal notes, upload file attachments, and read the extracted job
+  description.
+
+### Organize
+
+- Create **Folders** to group related jobs (e.g., "Remote Python Roles").
+- Filter the dashboard by folder or keyword.
 
 ## Application Structure
 
@@ -221,21 +242,24 @@ registration time.
 03-ecs/                      # Terraform: ECS Fargate, ALB, IAM roles
 02-docker/jobboard/          # Rails 7.1 application
   app/
-    models/                  # User, Company, Job, JobApplication
-    policies/                # Pundit: JobPolicy, JobApplicationPolicy, CompanyPolicy
+    models/                  # User, Resume, Folder, Job, Attachment
+    policies/                # Pundit: one policy per model (user-scoped)
     controllers/
-      employer/              # Namespaced employer controllers
+      dashboard_controller.rb
+      jobs_controller.rb
+      resumes_controller.rb
+      folders_controller.rb
+      attachments_controller.rb
     views/                   # ERB templates with Tailwind CSS (CDN)
-    jobs/                    # ApplicationNotificationJob (Sidekiq)
-    mailers/                 # EmployerMailer
+    jobs/                    # ScoringJob (Sidekiq + Bedrock)
   db/
-    migrate/                 # 6 migrations: users, companies, jobs, applications, AS
-    seeds.rb                 # Demo employers, companies, jobs, candidates
+    migrate/                 # 6 migrations (timestamps frozen at 20240101*)
+    seeds.rb                 # 1 demo user, 2 resumes, 2 folders, 2 jobs
   config/
     routes.rb
     storage.yml              # ActiveStorage → S3 via IAM role
   Dockerfile
-  startup.sh                 # Waits for DB, runs db:prepare, starts Sidekiq + Puma
+  startup.sh                 # Waits for DB, db:prepare, Sidekiq + Puma
 apply.sh
 destroy.sh
 check_env.sh

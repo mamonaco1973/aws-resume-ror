@@ -55,7 +55,9 @@ for secret in \
   resumescorer_database_url \
   resumescorer_redis_url \
   resumescorer_secret_key_base \
-  resumescorer_bedrock_model_id; do
+  resumescorer_bedrock_model_id \
+  resumescorer_smtp_user \
+  resumescorer_smtp_password; do
 
   aws secretsmanager delete-secret \
     --secret-id "$secret" \

@@ -51,7 +51,10 @@ resource "aws_ecs_task_definition" "resumescorer" {
         { name = "RAILS_LOG_TO_STDOUT",      value = "true" },
         { name = "RAILS_SERVE_STATIC_FILES", value = "true" },
         { name = "AWS_REGION",               value = data.aws_region.current.id },
-        { name = "S3_BUCKET",                value = var.s3_bucket_name }
+        { name = "S3_BUCKET",                value = var.s3_bucket_name },
+        { name = "SMTP_SERVER",              value = var.smtp_server },
+        { name = "SMTP_PORT",                value = var.smtp_port },
+        { name = "APP_HOST",                 value = var.app_host }
       ]
 
       # Secrets Manager injects these at task start before the container runs
@@ -59,7 +62,9 @@ resource "aws_ecs_task_definition" "resumescorer" {
         { name = "DATABASE_URL",       valueFrom = data.aws_secretsmanager_secret.db_url.arn },
         { name = "REDIS_URL",          valueFrom = data.aws_secretsmanager_secret.redis_url.arn },
         { name = "SECRET_KEY_BASE",    valueFrom = data.aws_secretsmanager_secret.secret_key_base.arn },
-        { name = "BEDROCK_MODEL_ID",   valueFrom = data.aws_secretsmanager_secret.bedrock_model_id.arn }
+        { name = "BEDROCK_MODEL_ID",   valueFrom = data.aws_secretsmanager_secret.bedrock_model_id.arn },
+        { name = "SMTP_USER",          valueFrom = data.aws_secretsmanager_secret.smtp_user.arn },
+        { name = "SMTP_PASSWORD",      valueFrom = data.aws_secretsmanager_secret.smtp_password.arn }
       ]
 
       portMappings = [

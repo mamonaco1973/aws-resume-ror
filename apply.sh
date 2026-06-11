@@ -43,7 +43,11 @@ echo "NOTE: Building network infrastructure..."
 cd 01-network || { echo "ERROR: 01-network not found."; exit 1; }
 
 terraform init
-terraform apply -auto-approve
+terraform apply -auto-approve \
+  -var="smtp_user=${SMTP_USER}" \
+  -var="smtp_password=${SMTP_PASSWORD}" \
+  -var="smtp_server=${SMTP_SERVER:-smtp.improvmx.com}" \
+  -var="smtp_port=${SMTP_PORT:-587}"
 
 # Capture outputs consumed by the Docker build and ECS phases
 export S3_BUCKET=$(terraform output -raw s3_bucket_name)
@@ -96,9 +100,19 @@ cd 03-ecs || { echo "ERROR: 03-ecs not found."; exit 1; }
 
 terraform init
 terraform apply -auto-approve \
-  -var="s3_bucket_name=${S3_BUCKET}"
+  -var="s3_bucket_name=${S3_BUCKET}" \
+  -var="smtp_server=${SMTP_SERVER:-smtp.improvmx.com}" \
+  -var="smtp_port=${SMTP_PORT:-587}"
 
 export ALB_DNS=$(terraform output -raw alb_dns_name)
+
+# Re-apply with APP_HOST now that ALB DNS is known — sets correct password
+# reset URLs in Devise emails. First apply uses empty string (localhost).
+terraform apply -auto-approve \
+  -var="s3_bucket_name=${S3_BUCKET}" \
+  -var="smtp_server=${SMTP_SERVER:-smtp.improvmx.com}" \
+  -var="smtp_port=${SMTP_PORT:-587}" \
+  -var="app_host=${ALB_DNS}"
 
 cd .. || exit
 

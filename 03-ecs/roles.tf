@@ -46,7 +46,9 @@ resource "aws_iam_role_policy" "execution_secrets" {
         data.aws_secretsmanager_secret.db_url.arn,
         data.aws_secretsmanager_secret.redis_url.arn,
         data.aws_secretsmanager_secret.secret_key_base.arn,
-        data.aws_secretsmanager_secret.bedrock_model_id.arn
+        data.aws_secretsmanager_secret.bedrock_model_id.arn,
+        data.aws_secretsmanager_secret.smtp_user.arn,
+        data.aws_secretsmanager_secret.smtp_password.arn
       ]
     }]
   })

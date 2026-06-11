@@ -85,3 +85,34 @@ resource "aws_secretsmanager_secret_version" "bedrock_model_id" {
   secret_id     = aws_secretsmanager_secret.bedrock_model_id.id
   secret_string = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 }
+
+# ------------------------------------------------------------------------------
+# SMTP credentials — used by Devise to send password reset emails
+# ------------------------------------------------------------------------------
+resource "aws_secretsmanager_secret" "smtp_user" {
+  name        = "resumescorer_smtp_user"
+  description = "SMTP username for Devise password reset emails"
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "smtp_user" {
+  secret_id     = aws_secretsmanager_secret.smtp_user.id
+  secret_string = var.smtp_user
+}
+
+resource "aws_secretsmanager_secret" "smtp_password" {
+  name        = "resumescorer_smtp_password"
+  description = "SMTP password for Devise password reset emails"
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "smtp_password" {
+  secret_id     = aws_secretsmanager_secret.smtp_password.id
+  secret_string = var.smtp_password
+}

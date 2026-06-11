@@ -1,5 +1,5 @@
 Devise.setup do |config|
-  config.mailer_sender = "noreply@jobboard.example.com"
+  config.mailer_sender = ENV.fetch("SMTP_FROM", "noreply@#{ENV.fetch('APP_HOST', 'example.com')}")
 
   require "devise/orm/active_record"
 
