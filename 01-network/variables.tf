@@ -24,12 +24,14 @@ variable "smtp_user" {
   description = "SMTP username for Devise password reset emails"
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "smtp_password" {
   description = "SMTP password for Devise password reset emails"
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "smtp_server" {

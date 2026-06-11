@@ -143,7 +143,7 @@ NOTE: Demo login:         demo@example.com / password123
    subnets, Internet Gateway, NAT Gateway, RDS PostgreSQL 16, ElastiCache
    Redis 7, ECR repository, S3 bucket for uploads, and Secrets Manager entries
    for all credentials (including SMTP if provided).
-2. **Phase 2 — Docker Build** (`02-docker/jobboard/`): Builds the Rails
+2. **Phase 2 — Docker Build** (`02-docker/resumescorer/`): Builds the Rails
    container image and pushes it to ECR.
 3. **Phase 3 — ECS Fargate** (`03-ecs/`): Deploys the ECS cluster, ALB,
    target group, task definition, and ECS service. Secrets Manager ARNs are
@@ -240,7 +240,7 @@ You can register additional accounts at `/users/sign_up`.
 ```
 01-network/                  # Terraform: VPC, RDS, Redis, ECR, S3, Secrets
 03-ecs/                      # Terraform: ECS Fargate, ALB, IAM roles
-02-docker/jobboard/          # Rails 7.1 application
+02-docker/resumescorer/          # Rails 7.1 application
   app/
     models/                  # User, Resume, Folder, Job, Attachment
     policies/                # Pundit: one policy per model (user-scoped)

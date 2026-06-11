@@ -61,7 +61,7 @@ cd .. || exit
 # Builds the Rails application container and pushes it to ECR.
 # ================================================================================================
 echo "NOTE: Building and pushing Docker image to ECR..."
-cd 02-docker/jobboard || { echo "ERROR: 02-docker/jobboard not found."; exit 1; }
+cd 02-docker/resumescorer || { echo "ERROR: 02-docker/resumescorer not found."; exit 1; }
 
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
 IMAGE_TAG="${ECR_URL}:latest"

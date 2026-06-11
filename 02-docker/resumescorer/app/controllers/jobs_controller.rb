@@ -2,12 +2,7 @@ class JobsController < ApplicationController
   before_action :set_job, only: [:show, :update, :destroy]
 
   def index
-    @jobs = policy_scope(Job)
-              .includes(:resume, :folder)
-              .recent
-              .in_folder(params[:folder_id])
-              .by_keyword(params[:q])
-    @folders = current_user.folders.order(:name)
+    redirect_to dashboard_path
   end
 
   def show

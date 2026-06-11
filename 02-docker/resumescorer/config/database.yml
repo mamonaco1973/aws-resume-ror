@@ -5,11 +5,11 @@ default: &default
 
 development:
   <<: *default
-  database: jobboard_development
+  database: resumescorer_development
 
 test:
   <<: *default
-  database: jobboard_test
+  database: resumescorer_test
 
 # DATABASE_URL injected at runtime from Secrets Manager — overrides everything
 production:

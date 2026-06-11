@@ -38,7 +38,7 @@ There are no test or lint commands configured.
 01-network/          # Terraform: VPC, RDS PostgreSQL 16, ElastiCache Redis 7,
                      #   ECR, S3 (uploads), Secrets Manager (4 secrets)
 03-ecs/              # Terraform: ECS Fargate cluster, ALB, task def, IAM roles
-02-docker/jobboard/  # Rails 7.1 app + Dockerfile + startup.sh
+02-docker/resumescorer/  # Rails 7.1 app + Dockerfile + startup.sh
 ```
 
 ### Deployment Flow
