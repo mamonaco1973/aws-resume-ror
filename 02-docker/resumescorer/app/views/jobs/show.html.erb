@@ -1,9 +1,10 @@
 <div class="max-w-3xl">
   <div class="mb-4 flex items-center justify-between">
     <%= link_to "← Dashboard", root_path, class: "text-indigo-600 hover:underline text-sm" %>
-    <%= link_to "Delete", job_path(@job),
-        data: { turbo_method: :delete, turbo_confirm: "Delete this job and all its data?" },
-        class: "text-xs text-red-500 hover:text-red-700" %>
+    <%= form_with url: job_path(@job), method: :delete, local: true,
+        onsubmit: "return confirm('Delete this job and all its data?')" do %>
+      <%= submit_tag "Delete", class: "text-xs text-red-500 hover:text-red-700 bg-transparent border-0 cursor-pointer p-0" %>
+    <% end %>
   </div>
 
   <%# Header card with score ring %>
@@ -106,9 +107,10 @@
                 <p class="text-xs text-gray-400 mt-0.5"><%= att.notes %></p>
               <% end %>
             </div>
-            <%= link_to "Remove", job_attachment_path(@job, att),
-                data: { turbo_method: :delete, turbo_confirm: "Remove this attachment?" },
-                class: "text-xs text-red-500 hover:text-red-700" %>
+            <%= form_with url: job_attachment_path(@job, att), method: :delete, local: true,
+                onsubmit: "return confirm('Remove this attachment?')" do %>
+              <%= submit_tag "Remove", class: "text-xs text-red-500 hover:text-red-700 bg-transparent border-0 cursor-pointer p-0" %>
+            <% end %>
           </li>
         <% end %>
       </ul>

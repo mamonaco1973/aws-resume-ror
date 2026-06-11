@@ -97,9 +97,10 @@
               <%= job.created_at.strftime("%b %d") %>
             </td>
             <td class="px-4 py-3">
-              <%= link_to "✕", job_path(job), data: { turbo_method: :delete,
-                  turbo_confirm: "Delete this job?" },
-                  class: "text-gray-300 hover:text-red-500 text-xs" %>
+              <%= form_with url: job_path(job), method: :delete, local: true,
+                  onsubmit: "return confirm('Delete this job?')" do %>
+                <%= submit_tag "✕", class: "text-gray-300 hover:text-red-500 text-xs bg-transparent border-0 cursor-pointer p-0" %>
+              <% end %>
             </td>
           </tr>
         <% end %>

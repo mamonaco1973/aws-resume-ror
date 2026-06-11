@@ -12,5 +12,6 @@ Devise.setup do |config|
   config.password_length = 6..128
   config.email_regexp = /\A[^@\s]+@[^@\s]+\z/
   config.reset_password_within = 6.hours
-  config.sign_out_via = :delete
+  # GET sign-out — no Turbo in this app so DELETE links fire as GET
+  config.sign_out_via = :get
 end
