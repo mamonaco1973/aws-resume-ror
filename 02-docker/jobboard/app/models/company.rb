@@ -1,7 +1,4 @@
+# Zeitwerk stub — this model is not used in the resume scoring app.
+# The file must define Company to satisfy autoloader expectations.
 class Company < ApplicationRecord
-  belongs_to :user
-  has_many :jobs, dependent: :destroy
-
-  validates :name, presence: true
-  validates :location, presence: true
 end

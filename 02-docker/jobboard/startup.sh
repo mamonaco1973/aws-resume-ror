@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-echo "NOTE: Starting jobboard container..."
+echo "NOTE: Starting resumescorer container..."
 
 # ------------------------------------------------------------------------------
 # Wait for Database
@@ -46,7 +46,7 @@ bundle exec rake db:seed
 
 # ------------------------------------------------------------------------------
 # Start Sidekiq in Background
-# Sidekiq processes the :default queue for ApplicationNotificationJob.
+# Sidekiq processes the :default queue for ScoringJob.
 # ------------------------------------------------------------------------------
 echo "NOTE: Starting Sidekiq..."
 bundle exec sidekiq -C config/sidekiq.yml 2>&1 &

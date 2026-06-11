@@ -1,7 +1,5 @@
-class JobPolicy < ApplicationPolicy
-  def show?    = record.user_id == user.id
+class ResumePolicy < ApplicationPolicy
   def create?  = true
-  def update?  = record.user_id == user.id
   def destroy? = record.user_id == user.id
 
   class Scope < ApplicationPolicy::Scope

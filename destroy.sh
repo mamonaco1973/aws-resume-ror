@@ -24,8 +24,8 @@ cd 03-ecs || { echo "ERROR: Directory 03-ecs not found."; exit 1; }
 
 # Resolve the S3 bucket name to satisfy the Terraform variable during destroy
 S3_BUCKET=$(aws s3api list-buckets \
-  --query "Buckets[?starts_with(Name,'jobboard-uploads')].Name | [0]" \
-  --output text 2>/dev/null || echo "jobboard-uploads-placeholder")
+  --query "Buckets[?starts_with(Name,'resumescorer-uploads')].Name | [0]" \
+  --output text 2>/dev/null || echo "resumescorer-uploads-placeholder")
 
 terraform init
 terraform destroy -auto-approve -var="s3_bucket_name=${S3_BUCKET}" || true
@@ -39,7 +39,7 @@ cd .. || exit
 # ================================================================================================
 echo "NOTE: Deleting ECR repository..."
 aws ecr delete-repository \
-  --repository-name "jobboard" \
+  --repository-name "resumescorer" \
   --force \
   --region "${AWS_DEFAULT_REGION}" 2>/dev/null || \
   echo "WARN: ECR repository not found or already deleted."
@@ -52,9 +52,10 @@ aws ecr delete-repository \
 echo "NOTE: Deleting Secrets Manager entries..."
 
 for secret in \
-  jobboard_database_url \
-  jobboard_redis_url \
-  jobboard_secret_key_base; do
+  resumescorer_database_url \
+  resumescorer_redis_url \
+  resumescorer_secret_key_base \
+  resumescorer_bedrock_model_id; do
 
   aws secretsmanager delete-secret \
     --secret-id "$secret" \

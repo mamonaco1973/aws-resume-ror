@@ -1,24 +1,17 @@
 Rails.application.routes.draw do
   devise_for :users
 
-  root "jobs#index"
-
-  resources :jobs, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
-    resources :applications, only: [:new, :create]
-  end
-
-  resources :companies, only: [:show, :new, :create, :edit, :update]
-
-  namespace :employer do
-    root "jobs#index"
-    resources :jobs, only: [:index, :show] do
-      resources :applications, only: [:show] do
-        member do
-          patch :update_status
-        end
-      end
-    end
-  end
+  root "dashboard#index"
 
   get "dashboard", to: "dashboard#index", as: :dashboard
+
+  resources :resumes, only: [:index, :new, :create, :destroy]
+  resources :folders, only: [:index, :new, :create, :destroy]
+
+  resources :jobs, only: [:index, :new, :create, :show, :update, :destroy] do
+    resources :attachments, only: [:create, :destroy]
+  end
+
+  # Token usage summary for the current user
+  get "usage", to: "dashboard#usage", as: :usage
 end

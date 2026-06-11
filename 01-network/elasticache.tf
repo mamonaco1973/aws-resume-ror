@@ -2,19 +2,19 @@
 # ElastiCache Redis — Sidekiq Queue Backend
 # ==============================================================================
 # Single-node Redis cluster (no cluster mode) — sufficient for Sidekiq
-# background jobs and Action Cable in a demo environment.
+# background jobs in a demo environment.
 # ==============================================================================
 
-resource "aws_elasticache_subnet_group" "jobboard" {
-  name       = "jobboard-redis-subnet-group"
+resource "aws_elasticache_subnet_group" "resumescorer" {
+  name       = "resumescorer-redis-subnet-group"
   subnet_ids = [aws_subnet.priv-subnet-1.id, aws_subnet.priv-subnet-2.id]
 
-  tags = { Name = "jobboard-redis-subnet-group" }
+  tags = { Name = "resumescorer-redis-subnet-group" }
 }
 
 # Allow Redis from within the VPC only
 resource "aws_security_group" "redis" {
-  name        = "jobboard-redis-sg"
+  name        = "resumescorer-redis-sg"
   description = "Allow Redis from VPC"
   vpc_id      = aws_vpc.ecs-vpc.id
 
@@ -33,19 +33,19 @@ resource "aws_security_group" "redis" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "jobboard-redis-sg" }
+  tags = { Name = "resumescorer-redis-sg" }
 }
 
-resource "aws_elasticache_cluster" "jobboard" {
-  cluster_id           = "jobboard-redis"
+resource "aws_elasticache_cluster" "resumescorer" {
+  cluster_id           = "resumescorer-redis"
   engine               = "redis"
   node_type            = "cache.t3.micro"
   num_cache_nodes      = 1
   parameter_group_name = "default.redis7"
   port                 = 6379
 
-  subnet_group_name  = aws_elasticache_subnet_group.jobboard.name
+  subnet_group_name  = aws_elasticache_subnet_group.resumescorer.name
   security_group_ids = [aws_security_group.redis.id]
 
-  tags = { Name = "jobboard-redis" }
+  tags = { Name = "resumescorer-redis" }
 }

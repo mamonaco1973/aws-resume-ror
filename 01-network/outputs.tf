@@ -23,7 +23,7 @@ output "pub_subnet_2_id" {
 }
 
 output "ecr_repository_url" {
-  value = aws_ecr_repository.jobboard.repository_url
+  value = aws_ecr_repository.resumescorer.repository_url
 }
 
 output "s3_bucket_name" {
@@ -31,9 +31,9 @@ output "s3_bucket_name" {
 }
 
 output "rds_endpoint" {
-  value = aws_db_instance.jobboard.endpoint
+  value = aws_db_instance.resumescorer.endpoint
 }
 
 output "redis_endpoint" {
-  value = aws_elasticache_cluster.jobboard.cache_nodes[0].address
+  value = aws_elasticache_cluster.resumescorer.cache_nodes[0].address
 }

@@ -5,16 +5,16 @@
 # Placed in private subnets; no public endpoint exposed.
 # ==============================================================================
 
-resource "aws_db_subnet_group" "jobboard" {
-  name       = "jobboard-db-subnet-group"
+resource "aws_db_subnet_group" "resumescorer" {
+  name       = "resumescorer-db-subnet-group"
   subnet_ids = [aws_subnet.priv-subnet-1.id, aws_subnet.priv-subnet-2.id]
 
-  tags = { Name = "jobboard-db-subnet-group" }
+  tags = { Name = "resumescorer-db-subnet-group" }
 }
 
 # Allow PostgreSQL from within the VPC only — ECS tasks are in private subnets
 resource "aws_security_group" "rds" {
-  name        = "jobboard-rds-sg"
+  name        = "resumescorer-rds-sg"
   description = "Allow PostgreSQL from VPC"
   vpc_id      = aws_vpc.ecs-vpc.id
 
@@ -33,11 +33,11 @@ resource "aws_security_group" "rds" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "jobboard-rds-sg" }
+  tags = { Name = "resumescorer-rds-sg" }
 }
 
-resource "aws_db_instance" "jobboard" {
-  identifier        = "jobboard-db"
+resource "aws_db_instance" "resumescorer" {
+  identifier        = "resumescorer-db"
   engine            = "postgres"
   engine_version    = "16"
   instance_class    = "db.t3.micro"
@@ -47,12 +47,12 @@ resource "aws_db_instance" "jobboard" {
   username = var.db_username
   password = random_password.db_password.result
 
-  db_subnet_group_name   = aws_db_subnet_group.jobboard.name
+  db_subnet_group_name   = aws_db_subnet_group.resumescorer.name
   vpc_security_group_ids = [aws_security_group.rds.id]
 
   # Skip final snapshot — demo environment; change for production
   skip_final_snapshot = true
   publicly_accessible = false
 
-  tags = { Name = "jobboard-db" }
+  tags = { Name = "resumescorer-db" }
 }

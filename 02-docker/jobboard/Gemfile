@@ -19,6 +19,15 @@ gem "redis", ">= 4.0.1"
 gem "aws-sdk-s3", require: false
 gem "image_processing", "~> 1.2"
 
+# AI scoring via AWS Bedrock
+gem "aws-sdk-bedrockruntime"
+
+# HTML parsing for URL-based job extraction
+gem "nokogiri"
+
+# PDF text extraction for resume content
+gem "pdf-reader"
+
 group :development, :test do
   gem "debug", platforms: %i[mri windows]
 end

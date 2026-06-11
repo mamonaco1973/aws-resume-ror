@@ -7,7 +7,7 @@
 # Used by ECS agent to pull images, write logs, and read Secrets Manager.
 # ------------------------------------------------------------------------------
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ecsTaskExecutionRole-jobboard"
+  name = "ecsTaskExecutionRole-resumescorer"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -29,9 +29,9 @@ resource "aws_iam_role_policy_attachment" "execution_cloudwatch" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
 }
 
-# Allow execution role to read the three application secrets at task start
+# Allow execution role to read the four application secrets at task start
 resource "aws_iam_role_policy" "execution_secrets" {
-  name = "jobboard-execution-secrets"
+  name = "resumescorer-execution-secrets"
   role = aws_iam_role.ecs_task_execution.id
 
   policy = jsonencode({
@@ -45,7 +45,8 @@ resource "aws_iam_role_policy" "execution_secrets" {
       Resource = [
         data.aws_secretsmanager_secret.db_url.arn,
         data.aws_secretsmanager_secret.redis_url.arn,
-        data.aws_secretsmanager_secret.secret_key_base.arn
+        data.aws_secretsmanager_secret.secret_key_base.arn,
+        data.aws_secretsmanager_secret.bedrock_model_id.arn
       ]
     }]
   })
@@ -53,10 +54,10 @@ resource "aws_iam_role_policy" "execution_secrets" {
 
 # ------------------------------------------------------------------------------
 # Task Runtime Role
-# Assumed by the Rails container itself at runtime — needs S3 for ActiveStorage.
+# Assumed by the Rails container at runtime — needs S3 and Bedrock.
 # ------------------------------------------------------------------------------
 resource "aws_iam_role" "ecs_task_runtime" {
-  name = "ecsTaskRuntimeRole-jobboard"
+  name = "ecsTaskRuntimeRole-resumescorer"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -68,9 +69,9 @@ resource "aws_iam_role" "ecs_task_runtime" {
   })
 }
 
-# S3 read/write for ActiveStorage resume uploads
+# S3 read/write for ActiveStorage resume and attachment uploads
 resource "aws_iam_role_policy" "runtime_s3" {
-  name = "jobboard-runtime-s3"
+  name = "resumescorer-runtime-s3"
   role = aws_iam_role.ecs_task_runtime.id
 
   policy = jsonencode({
@@ -91,9 +92,24 @@ resource "aws_iam_role_policy" "runtime_s3" {
   })
 }
 
+# Bedrock inference — used by ScoringJob to call Claude Haiku
+resource "aws_iam_role_policy" "runtime_bedrock" {
+  name = "resumescorer-runtime-bedrock"
+  role = aws_iam_role.ecs_task_runtime.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["bedrock:InvokeModel"]
+      Resource = "*"
+    }]
+  })
+}
+
 # ECS Exec — allows `aws ecs execute-command` for debugging
 resource "aws_iam_role_policy" "runtime_exec" {
-  name = "jobboard-runtime-exec"
+  name = "resumescorer-runtime-exec"
   role = aws_iam_role.ecs_task_runtime.id
 
   policy = jsonencode({

@@ -1,12 +1,17 @@
 class DashboardController < ApplicationController
   def index
     skip_authorization
-    if current_user.employer?
-      redirect_to employer_root_path
-    else
-      @applications = current_user.job_applications
-                        .includes(:job)
-                        .order(created_at: :desc)
-    end
+    @jobs    = current_user.jobs
+                 .includes(:resume, :folder)
+                 .recent
+                 .in_folder(params[:folder_id])
+                 .by_keyword(params[:q])
+    @folders = current_user.folders.order(:name)
+    @resumes = current_user.resumes.order(:name)
+  end
+
+  def usage
+    skip_authorization
+    @user = current_user
   end
 end

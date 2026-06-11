@@ -37,19 +37,23 @@ data "aws_subnet" "pub-subnet-2" {
   }
 }
 
-data "aws_ecr_repository" "jobboard" {
-  name = "jobboard"
+data "aws_ecr_repository" "resumescorer" {
+  name = "resumescorer"
 }
 
 # Secrets created in 01-network, injected into ECS task at runtime
 data "aws_secretsmanager_secret" "db_url" {
-  name = "jobboard_database_url"
+  name = "resumescorer_database_url"
 }
 
 data "aws_secretsmanager_secret" "redis_url" {
-  name = "jobboard_redis_url"
+  name = "resumescorer_redis_url"
 }
 
 data "aws_secretsmanager_secret" "secret_key_base" {
-  name = "jobboard_secret_key_base"
+  name = "resumescorer_secret_key_base"
+}
+
+data "aws_secretsmanager_secret" "bedrock_model_id" {
+  name = "resumescorer_bedrock_model_id"
 }

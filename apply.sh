@@ -3,7 +3,7 @@
 # Script Name: apply.sh
 # ================================================================================================
 # Purpose:
-#   Deploys the JobBoard Ruby on Rails application end-to-end on AWS.
+#   Deploys the Resume Scorer Ruby on Rails application end-to-end on AWS.
 #
 # Deployment Phases:
 #   1. Network infrastructure (VPC, RDS, ElastiCache Redis, ECR, S3, Secrets Manager)
@@ -14,6 +14,7 @@
 # Requirements:
 #   - AWS CLI v2, Terraform, Docker, jq
 #   - AWS credentials with administrative permissions
+#   - Bedrock model access enabled in us-east-1 for Claude Haiku
 # ================================================================================================
 
 # -----------------------------------------------------------------------------------------------
@@ -109,9 +110,8 @@ echo "NOTE: Running post-deployment validation..."
 
 echo ""
 echo "NOTE: Deployment complete."
-echo "NOTE: JobBoard URL:           http://${ALB_DNS}"
-echo "NOTE: Candidate login:        candidate1@example.com / password123"
-echo "NOTE: Employer login:         employer1@example.com  / password123"
+echo "NOTE: Resume Scorer URL:  http://${ALB_DNS}"
+echo "NOTE: Demo login:         demo@example.com / password123"
 
 # ================================================================================================
 # End of Script

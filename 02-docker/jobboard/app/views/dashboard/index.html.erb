@@ -1,25 +1,106 @@
-<h1 class="text-2xl font-bold text-gray-800 mb-6">My Applications</h1>
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">My Jobs</h1>
+  <%= link_to "Score a Job", new_job_path,
+      class: "bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 text-sm font-medium" %>
+</div>
 
-<% if @applications.any? %>
+<%# Token usage ring %>
+<% pct = current_user.token_usage_pct %>
+<div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 flex items-center gap-6">
+  <%# SVG ring — circumference of r=20 circle is ~125.7; stroke-dashoffset encodes usage %>
+  <svg width="56" height="56" viewBox="0 0 56 56">
+    <circle cx="28" cy="28" r="20" fill="none" stroke="#e5e7eb" stroke-width="6"/>
+    <circle cx="28" cy="28" r="20" fill="none"
+            stroke="<%= pct >= 90 ? '#ef4444' : pct >= 60 ? '#f59e0b' : '#6366f1' %>"
+            stroke-width="6"
+            stroke-dasharray="125.7"
+            stroke-dashoffset="<%= (125.7 * (1 - pct / 100.0)).round(1) %>"
+            stroke-linecap="round"
+            transform="rotate(-90 28 28)"/>
+    <text x="28" y="33" text-anchor="middle" font-size="11" font-weight="600"
+          fill="<%= pct >= 90 ? '#ef4444' : '#374151' %>"><%= pct %>%</text>
+  </svg>
+  <div>
+    <p class="text-sm font-medium text-gray-700">Bedrock Token Usage</p>
+    <p class="text-xs text-gray-500">
+      <%= number_with_delimiter(current_user.tokens_used) %> /
+      <%= number_with_delimiter(current_user.token_limit) %> tokens used
+    </p>
+  </div>
+</div>
+
+<%# Filters %>
+<div class="flex flex-wrap gap-3 mb-4">
+  <%= form_with url: root_path, method: :get, local: true, class: "flex gap-2" do |f| %>
+    <%= f.text_field :q, value: params[:q], placeholder: "Search title or company...",
+        class: "border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 w-56" %>
+    <%= f.select :folder_id,
+        options_from_collection_for_select(@folders, :id, :name, params[:folder_id]),
+        { include_blank: "All folders" },
+        class: "border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" %>
+    <%= f.submit "Filter", class: "bg-gray-100 border border-gray-300 text-gray-700 px-3 py-1.5 rounded text-sm hover:bg-gray-200 cursor-pointer" %>
+  <% end %>
+</div>
+
+<% if @jobs.any? %>
   <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
     <table class="w-full text-sm">
       <thead class="bg-gray-50 border-b border-gray-200">
         <tr>
-          <th class="px-5 py-3 text-left font-medium text-gray-600">Position</th>
-          <th class="px-5 py-3 text-left font-medium text-gray-600">Company</th>
-          <th class="px-5 py-3 text-left font-medium text-gray-600">Applied</th>
-          <th class="px-5 py-3 text-left font-medium text-gray-600">Status</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-600 w-20">Score</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-600">Title</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-600">Company</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-600">Resume</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-600">Folder</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-600">Status</th>
+          <th class="px-4 py-3 text-left font-medium text-gray-600">Date</th>
+          <th class="px-4 py-3 w-10"></th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100">
-        <% @applications.each do |app| %>
+        <% @jobs.each do |job| %>
           <tr class="hover:bg-gray-50">
-            <td class="px-5 py-3">
-              <%= link_to app.job.title, job_path(app.job), class: "text-blue-600 hover:underline" %>
+            <td class="px-4 py-3">
+              <% if job.scored? && job.score %>
+                <% color = job.score_color %>
+                <span class="inline-flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold
+                  <%= color == 'green' ? 'bg-green-100 text-green-800' :
+                      color == 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800' %>">
+                  <%= job.score %>
+                </span>
+              <% elsif job.processing? %>
+                <span class="text-gray-400 text-xs">...</span>
+              <% else %>
+                <span class="text-gray-300">-</span>
+              <% end %>
             </td>
-            <td class="px-5 py-3 text-gray-600"><%= app.job.company.name %></td>
-            <td class="px-5 py-3 text-gray-500"><%= app.created_at.strftime("%b %d, %Y") %></td>
-            <td class="px-5 py-3"><%= status_badge(app.status) %></td>
+            <td class="px-4 py-3 font-medium">
+              <%= link_to job.title.presence || "(untitled)", job_path(job),
+                  class: "text-indigo-600 hover:underline" %>
+            </td>
+            <td class="px-4 py-3 text-gray-600"><%= job.company.presence || "-" %></td>
+            <td class="px-4 py-3 text-gray-500 text-xs"><%= job.resume.name %></td>
+            <td class="px-4 py-3 text-gray-500 text-xs"><%= job.folder&.name || "-" %></td>
+            <td class="px-4 py-3">
+              <% badge_class = case job.status
+                 when "scored"  then "bg-green-100 text-green-700"
+                 when "scoring" then "bg-yellow-100 text-yellow-700"
+                 when "pending" then "bg-gray-100 text-gray-600"
+                 when "error"   then "bg-red-100 text-red-700"
+                 end %>
+              <span class="px-2 py-0.5 rounded text-xs font-medium <%= badge_class %>">
+                <%= job.status.capitalize %>
+              </span>
+            </td>
+            <td class="px-4 py-3 text-gray-400 text-xs">
+              <%= job.created_at.strftime("%b %d") %>
+            </td>
+            <td class="px-4 py-3">
+              <%= link_to "✕", job_path(job), data: { turbo_method: :delete,
+                  turbo_confirm: "Delete this job?" },
+                  class: "text-gray-300 hover:text-red-500 text-xs" %>
+            </td>
           </tr>
         <% end %>
       </tbody>
@@ -27,7 +108,8 @@
   </div>
 <% else %>
   <div class="text-center py-16 text-gray-500">
-    <p class="text-lg mb-3">No applications yet.</p>
-    <%= link_to "Browse open positions →", jobs_path, class: "text-blue-600 hover:underline" %>
+    <p class="text-lg mb-3">No jobs yet.</p>
+    <%= link_to "Score your first job →", new_job_path,
+        class: "text-indigo-600 hover:underline" %>
   </div>
 <% end %>

@@ -6,9 +6,9 @@
 # ==============================================================================
 
 resource "aws_s3_bucket" "uploads" {
-  bucket_prefix = "jobboard-uploads-"
+  bucket_prefix = "resumescorer-uploads-"
 
-  tags = { Name = "jobboard-uploads" }
+  tags = { Name = "resumescorer-uploads" }
 }
 
 resource "aws_s3_bucket_public_access_block" "uploads" {

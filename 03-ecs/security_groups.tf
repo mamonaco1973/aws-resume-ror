@@ -7,7 +7,7 @@
 # Allows public HTTP (80) inbound; ECS tasks only accept traffic from ALB.
 # ------------------------------------------------------------------------------
 resource "aws_security_group" "alb" {
-  name        = "jobboard-alb-sg"
+  name        = "resumescorer-alb-sg"
   description = "ALB inbound HTTP"
   vpc_id      = data.aws_vpc.ecs-vpc.id
 
@@ -26,7 +26,7 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "jobboard-alb-sg" }
+  tags = { Name = "resumescorer-alb-sg" }
 }
 
 # ------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ resource "aws_security_group" "alb" {
 # Rails runs on port 3000; only ALB is allowed to initiate connections.
 # ------------------------------------------------------------------------------
 resource "aws_security_group" "ecs_service" {
-  name        = "jobboard-ecs-sg"
+  name        = "resumescorer-ecs-sg"
   description = "ECS tasks - allow from ALB only"
   vpc_id      = data.aws_vpc.ecs-vpc.id
 
@@ -53,5 +53,5 @@ resource "aws_security_group" "ecs_service" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "jobboard-ecs-sg" }
+  tags = { Name = "resumescorer-ecs-sg" }
 }
