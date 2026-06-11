@@ -41,5 +41,50 @@
       <%= yield %>
     </main>
 
+  <!-- Confirm modal -->
+  <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/40"></div>
+    <div class="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
+      <p id="confirm-message" class="text-gray-800 font-medium mb-5 text-center"></p>
+      <div class="flex gap-3 justify-center">
+        <button id="confirm-cancel"
+            class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:bg-gray-50">
+          Cancel
+        </button>
+        <button id="confirm-ok"
+            class="px-5 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const modal   = document.getElementById("confirm-modal");
+    const message = document.getElementById("confirm-message");
+    const okBtn   = document.getElementById("confirm-ok");
+    const cancelBtn = document.getElementById("confirm-cancel");
+    let pendingForm = null;
+
+    document.addEventListener("submit", function(e) {
+      const form = e.target;
+      if (!form.dataset.confirm) return;
+      e.preventDefault();
+      message.textContent = form.dataset.confirm;
+      pendingForm = form;
+      modal.classList.remove("hidden");
+    });
+
+    okBtn.addEventListener("click", function() {
+      modal.classList.add("hidden");
+      if (pendingForm) { pendingForm.dataset.confirm = ""; pendingForm.submit(); }
+    });
+
+    cancelBtn.addEventListener("click", function() {
+      modal.classList.add("hidden");
+      pendingForm = null;
+    });
+  </script>
+
   </body>
 </html>

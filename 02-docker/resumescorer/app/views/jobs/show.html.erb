@@ -2,7 +2,7 @@
   <div class="mb-4 flex items-center justify-between">
     <%= link_to "← Dashboard", root_path, class: "text-indigo-600 hover:underline text-sm" %>
     <%= form_with url: job_path(@job), method: :delete, local: true,
-        onsubmit: "return confirm('Delete this job and all its data?')" do %>
+        data: { confirm: "Delete this job and all its data?" } do %>
       <%= submit_tag "Delete", class: "text-xs text-red-500 hover:text-red-700 bg-transparent border-0 cursor-pointer p-0" %>
     <% end %>
   </div>
@@ -108,7 +108,7 @@
               <% end %>
             </div>
             <%= form_with url: job_attachment_path(@job, att), method: :delete, local: true,
-                onsubmit: "return confirm('Remove this attachment?')" do %>
+                data: { confirm: "Remove this attachment?" } do %>
               <%= submit_tag "Remove", class: "text-xs text-red-500 hover:text-red-700 bg-transparent border-0 cursor-pointer p-0" %>
             <% end %>
           </li>

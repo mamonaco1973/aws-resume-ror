@@ -24,7 +24,7 @@
             <td class="px-5 py-3 text-gray-500"><%= folder.jobs.count %></td>
             <td class="px-5 py-3 text-right">
               <%= form_with url: folder_path(folder), method: :delete, local: true,
-                  onsubmit: "return confirm('Delete folder? Jobs will be unassigned.')" do %>
+                  data: { confirm: "Delete folder? Jobs will be unassigned." } do %>
                 <%= submit_tag "Delete", class: "text-xs text-red-500 hover:text-red-700 bg-transparent border-0 cursor-pointer p-0" %>
               <% end %>
             </td>
