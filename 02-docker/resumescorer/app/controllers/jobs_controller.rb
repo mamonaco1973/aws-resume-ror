@@ -21,24 +21,47 @@ class JobsController < ApplicationController
 
   def create
     authorize Job
-    @job = current_user.jobs.build(job_params)
-    @job.resume = current_user.resumes.find(params[:job][:resume_id])
+    resume = current_user.resumes.find(params[:job][:resume_id])
+    folder_id = params[:job][:folder_id].presence
 
-    # LinkedIn job ID — convert to a guest API URL so ScoringJob needs no
-    # special case. The guest endpoint returns job HTML without requiring login.
-    if @job.source_type == "linkedin_id" && params[:job][:linkedin_id].present?
-      lid = params[:job][:linkedin_id].to_s.strip.gsub(/\D/, "")
-      @job.url         = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/#{lid}"
-      @job.source_type = "url"
-    end
+    if params[:job][:source_type] == "linkedin_id"
+      ids = params[:job][:linkedin_ids].to_s
+                .lines.map { |l| l.strip.gsub(/\D/, "") }
+                .reject(&:blank?)
+                .first(10)
 
-    if @job.save
-      ScoringJob.perform_later(@job.id)
-      redirect_to @job, notice: "Job submitted — scoring will begin shortly."
+      if ids.empty?
+        @job     = Job.new
+        @resumes = current_user.resumes.order(:name)
+        @folders = current_user.folders.order(:name)
+        flash.now[:alert] = "Enter at least one LinkedIn job ID."
+        return render :new, status: :unprocessable_entity
+      end
+
+      ids.each do |lid|
+        job = current_user.jobs.create!(
+          resume:      resume,
+          folder_id:   folder_id,
+          source_type: "url",
+          url:         "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/#{lid}"
+        )
+        ScoringJob.perform_later(job.id)
+      end
+
+      redirect_to dashboard_path,
+        notice: "#{ids.size} LinkedIn #{"job".pluralize(ids.size)} submitted for scoring."
     else
-      @resumes = current_user.resumes.order(:name)
-      @folders = current_user.folders.order(:name)
-      render :new, status: :unprocessable_entity
+      @job        = current_user.jobs.build(job_params)
+      @job.resume = resume
+
+      if @job.save
+        ScoringJob.perform_later(@job.id)
+        redirect_to @job, notice: "Job submitted — scoring will begin shortly."
+      else
+        @resumes = current_user.resumes.order(:name)
+        @folders = current_user.folders.order(:name)
+        render :new, status: :unprocessable_entity
+      end
     end
   end
 
@@ -62,7 +85,7 @@ class JobsController < ApplicationController
 
   def job_params
     params.require(:job).permit(
-      :source_type, :url, :raw_text, :folder_id, :notes, :linkedin_id
+      :source_type, :url, :raw_text, :folder_id, :notes
     )
   end
 end

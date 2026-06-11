@@ -54,10 +54,11 @@
       </div>
 
       <div id="linkedin_field" class="hidden">
-        <%= f.label :linkedin_id, "LinkedIn Job ID", class: "block text-sm font-medium text-gray-700 mb-1" %>
-        <%= f.text_field :linkedin_id, placeholder: "e.g. 3912345678",
-            class: "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" %>
-        <p class="text-xs text-gray-500 mt-1">The numeric ID from the LinkedIn job URL: linkedin.com/jobs/view/<strong>3912345678</strong></p>
+        <%= f.label :linkedin_ids, "LinkedIn Job IDs", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.text_area :linkedin_ids, rows: 10,
+            placeholder: "3912345678\n3987654321\n...",
+            class: "w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400" %>
+        <p class="text-xs text-gray-500 mt-1">One ID per line, up to 10. Find the ID in the LinkedIn job URL: linkedin.com/jobs/view/<strong>3912345678</strong></p>
       </div>
 
       <div id="text_field" class="hidden">
@@ -85,7 +86,7 @@
   const radios   = document.querySelectorAll("input[name='job[source_type]']");
   const fields   = {
     url:         document.getElementById("url_field"),
-    linkedin_id: document.getElementById("linkedin_field"),
+    linkedin_id: document.getElementById("linkedin_field"),  // radio value stays linkedin_id
     raw_text:    document.getElementById("text_field")
   };
   function toggle() {
