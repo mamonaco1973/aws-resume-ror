@@ -21,6 +21,7 @@
 # Global Configuration
 # -----------------------------------------------------------------------------------------------
 export AWS_DEFAULT_REGION="us-east-1"
+IMAGE_TAG=$(date +%Y%m%d%H%M%S)
 set -euo pipefail
 
 # -----------------------------------------------------------------------------------------------
@@ -64,7 +65,7 @@ echo "NOTE: Building and pushing Docker image to ECR..."
 cd 02-docker/resumescorer || { echo "ERROR: 02-docker/resumescorer not found."; exit 1; }
 
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
-IMAGE_TAG="${ECR_URL}:latest"
+FULL_IMAGE_TAG="${ECR_URL}:${IMAGE_TAG}"
 
 # Authenticate Docker with ECR using temporary STS credentials
 aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | \
@@ -75,17 +76,17 @@ aws ecr get-login-password --region "${AWS_DEFAULT_REGION}" | \
   }
 
 echo "NOTE: Building Docker image..."
-docker build -t "${IMAGE_TAG}" . || {
+docker build -t "${FULL_IMAGE_TAG}" . || {
   echo "ERROR: Docker build failed."
   exit 1
 }
 
 echo "NOTE: Pushing image to ECR..."
-docker push "${IMAGE_TAG}" || {
+docker push "${FULL_IMAGE_TAG}" || {
   echo "ERROR: Docker push failed."
   exit 1
 }
-echo "NOTE: Image pushed: ${IMAGE_TAG}"
+echo "NOTE: Image pushed: ${FULL_IMAGE_TAG}"
 
 cd ../.. || exit
 
@@ -101,6 +102,7 @@ cd 03-ecs || { echo "ERROR: 03-ecs not found."; exit 1; }
 terraform init
 terraform apply -auto-approve \
   -var="s3_bucket_name=${S3_BUCKET}" \
+  -var="image_tag=${IMAGE_TAG}" \
   -var="smtp_server=${SMTP_SERVER:-smtp.improvmx.com}" \
   -var="smtp_port=${SMTP_PORT:-587}"
 
@@ -110,6 +112,7 @@ export ALB_DNS=$(terraform output -raw alb_dns_name)
 # reset URLs in Devise emails. First apply uses empty string (localhost).
 terraform apply -auto-approve \
   -var="s3_bucket_name=${S3_BUCKET}" \
+  -var="image_tag=${IMAGE_TAG}" \
   -var="smtp_server=${SMTP_SERVER:-smtp.improvmx.com}" \
   -var="smtp_port=${SMTP_PORT:-587}" \
   -var="app_host=${ALB_DNS}"

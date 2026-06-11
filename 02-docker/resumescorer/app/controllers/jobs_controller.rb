@@ -24,6 +24,14 @@ class JobsController < ApplicationController
     @job = current_user.jobs.build(job_params)
     @job.resume = current_user.resumes.find(params[:job][:resume_id])
 
+    # LinkedIn job ID — convert to a guest API URL so ScoringJob needs no
+    # special case. The guest endpoint returns job HTML without requiring login.
+    if @job.source_type == "linkedin_id" && params[:job][:linkedin_id].present?
+      lid = params[:job][:linkedin_id].to_s.strip.gsub(/\D/, "")
+      @job.url         = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/#{lid}"
+      @job.source_type = "url"
+    end
+
     if @job.save
       ScoringJob.perform_later(@job.id)
       redirect_to @job, notice: "Job submitted — scoring will begin shortly."
@@ -54,7 +62,7 @@ class JobsController < ApplicationController
 
   def job_params
     params.require(:job).permit(
-      :source_type, :url, :raw_text, :folder_id, :notes
+      :source_type, :url, :raw_text, :folder_id, :notes, :linkedin_id
     )
   end
 end

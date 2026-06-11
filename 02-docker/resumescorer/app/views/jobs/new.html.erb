@@ -34,6 +34,11 @@
             <span>Job posting URL</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="job[source_type]" value="linkedin_id" id="source_linkedin"
+                   class="text-indigo-600">
+            <span>LinkedIn Job ID</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
             <input type="radio" name="job[source_type]" value="raw_text" id="source_text"
                    class="text-indigo-600">
             <span>Paste job description</span>
@@ -45,7 +50,14 @@
         <%= f.label :url, "Job Posting URL", class: "block text-sm font-medium text-gray-700 mb-1" %>
         <%= f.url_field :url, placeholder: "https://jobs.example.com/12345",
             class: "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" %>
-        <p class="text-xs text-gray-500 mt-1">LinkedIn, Indeed, Greenhouse, Lever, and most job boards supported.</p>
+        <p class="text-xs text-gray-500 mt-1">Indeed, Greenhouse, Lever, and most job boards supported.</p>
+      </div>
+
+      <div id="linkedin_field" class="hidden">
+        <%= f.label :linkedin_id, "LinkedIn Job ID", class: "block text-sm font-medium text-gray-700 mb-1" %>
+        <%= f.text_field :linkedin_id, placeholder: "e.g. 3912345678",
+            class: "w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" %>
+        <p class="text-xs text-gray-500 mt-1">The numeric ID from the LinkedIn job URL: linkedin.com/jobs/view/<strong>3912345678</strong></p>
       </div>
 
       <div id="text_field" class="hidden">
@@ -70,14 +82,15 @@
 </div>
 
 <script>
-  const urlRadio  = document.getElementById("source_url");
-  const textRadio = document.getElementById("source_text");
-  const urlField  = document.getElementById("url_field");
-  const txtField  = document.getElementById("text_field");
+  const radios   = document.querySelectorAll("input[name='job[source_type]']");
+  const fields   = {
+    url:         document.getElementById("url_field"),
+    linkedin_id: document.getElementById("linkedin_field"),
+    raw_text:    document.getElementById("text_field")
+  };
   function toggle() {
-    urlField.classList.toggle("hidden", !urlRadio.checked);
-    txtField.classList.toggle("hidden", !textRadio.checked);
+    const val = document.querySelector("input[name='job[source_type]']:checked").value;
+    Object.entries(fields).forEach(([k, el]) => el.classList.toggle("hidden", k !== val));
   }
-  urlRadio.addEventListener("change",  toggle);
-  textRadio.addEventListener("change", toggle);
+  radios.forEach(r => r.addEventListener("change", toggle));
 </script>
