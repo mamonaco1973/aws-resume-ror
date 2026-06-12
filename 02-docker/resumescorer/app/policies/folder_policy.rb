@@ -1,3 +1,7 @@
+# ==============================================================================
+# FolderPolicy
+# Authorization rules for Folder records.
+# ==============================================================================
 class FolderPolicy < ApplicationPolicy
   def create?  = true
   def destroy? = record.user_id == user.id

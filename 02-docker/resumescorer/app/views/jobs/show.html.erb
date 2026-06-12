@@ -55,10 +55,19 @@
         <span class="px-2 py-0.5 rounded bg-gray-100 text-gray-600">
           Resume: <%= @job.resume.name %>
         </span>
-        <% if @job.folder %>
-          <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700"><%= @job.folder.name %></span>
-        <% end %>
       </div>
+      <%# Inline folder selector — allows moving the job after scoring %>
+      <% if @folders.any? %>
+        <%= form_with url: job_path(@job), method: :patch, local: true,
+            class: "flex items-center gap-2 mt-2" do |f| %>
+          <%= f.select :folder_id,
+              options_from_collection_for_select(@folders, :id, :name, @job.folder_id),
+              { include_blank: "No folder" },
+              class: "border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" %>
+          <%= f.submit "Move",
+              class: "text-xs bg-gray-100 border border-gray-300 text-gray-600 px-3 py-1 rounded hover:bg-gray-200 cursor-pointer" %>
+        <% end %>
+      <% end %>
       <% if @job.errored? && @job.status_message.present? %>
         <p class="text-red-600 text-xs mt-2"><%= @job.status_message %></p>
       <% end %>

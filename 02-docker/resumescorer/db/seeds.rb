@@ -1,8 +1,21 @@
-# Seeds are idempotent — safe to re-run on every container start.
-# find_or_create_by! ensures no duplicates across redeploys.
+# ==============================================================================
+# Database Seeds
+# Populates the database with a demo user, resumes, folders, and pre-scored
+# jobs so the app is immediately usable after a fresh deploy without
+# any manual setup.
+#
+# Idempotency: find_or_create_by! matches on the given attribute(s) and
+# runs the block only when creating a new record. If the record already
+# exists it is returned unchanged. Re-running seeds (e.g. on every
+# container start via `rake db:seed` in startup.sh) is therefore safe —
+# no duplicates are created and no existing data is overwritten.
+# ==============================================================================
 
 puts "NOTE: Seeding demo user..."
 
+# find_or_create_by! matches on :email. The block runs only on CREATE.
+# The ! variant raises ActiveRecord::RecordInvalid if the block produces
+# an invalid record, halting the seed with a clear error.
 demo = User.find_or_create_by!(email: "demo@example.com") do |u|
   u.password              = "password123"
   u.password_confirmation = "password123"
@@ -12,6 +25,9 @@ end
 
 puts "NOTE: Seeding demo resumes..."
 
+# Guard the entire resume block with exists? — if any resume exists we
+# assume a previous seed ran successfully and skip the bulk content
+# (which has no unique key to use with find_or_create_by!).
 unless demo.resumes.exists?
   r1 = demo.resumes.create!(name: "Software Engineer Resume")
   r1.update!(content_text: <<~TEXT.strip)
@@ -62,12 +78,20 @@ end
 
 puts "NOTE: Seeding demo folders..."
 
+# find_or_create_by! is safe to call on every seed run — if "Tech Companies"
+# already exists it is simply returned; no duplicate is created.
 folder = demo.folders.find_or_create_by!(name: "Tech Companies")
 demo.folders.find_or_create_by!(name: "Startups")
 
 puts "NOTE: Seeding demo jobs..."
 
+# Guard with exists? for the same reason as resumes — job content has no
+# natural unique key for find_or_create_by!.
 unless demo.jobs.exists?
+  # These jobs are pre-scored (status: "scored") so the dashboard shows
+  # meaningful data immediately without needing Bedrock access on first
+  # boot. A real user's jobs would start as "pending" and go through
+  # ScoringJob.
   demo.jobs.create!(
     resume:               demo.resumes.first,
     folder:               folder,
