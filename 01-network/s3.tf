@@ -8,6 +8,11 @@
 resource "aws_s3_bucket" "uploads" {
   bucket_prefix = "resumescorer-uploads-"
 
+  # force_destroy allows Terraform to delete the bucket even when it
+  # contains objects and version markers — required because versioning
+  # is enabled and a normal DeleteBucket call fails on non-empty buckets.
+  force_destroy = true
+
   tags = { Name = "resumescorer-uploads" }
 }
 
