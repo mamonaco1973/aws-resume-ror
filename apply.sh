@@ -8,13 +8,14 @@
 # Deployment Phases:
 #   1. Network infrastructure (VPC, RDS, ElastiCache Redis, ECR, S3, Secrets Manager)
 #   2. Docker image build and ECR push
-#   3. ECS Fargate cluster, ALB, and service deployment
+#   3. ECS Fargate cluster, ALB, ACM cert, Route 53 records, and service deployment
 #   4. Post-deployment validation
 #
 # Requirements:
 #   - AWS CLI v2, Terraform, Docker, jq
 #   - AWS credentials with administrative permissions
 #   - Bedrock model access enabled in us-east-1 for Claude Haiku
+#   - Route 53 hosted zone for mikes-cloud-solutions.com must already exist
 # ================================================================================================
 
 # -----------------------------------------------------------------------------------------------
@@ -22,6 +23,7 @@
 # -----------------------------------------------------------------------------------------------
 export AWS_DEFAULT_REGION="us-east-1"
 IMAGE_TAG=$(date +%Y%m%d%H%M%S)
+APP_HOSTNAME="myjobs-ror.mikes-cloud-solutions.com"
 set -euo pipefail
 
 # -----------------------------------------------------------------------------------------------
@@ -93,8 +95,13 @@ cd ../.. || exit
 # ================================================================================================
 # Phase 3: ECS Fargate Cluster and Service
 # ================================================================================================
-# Deploys the ECS Fargate cluster, ALB, task definition, and ECS service.
-# Secrets Manager entries from Phase 1 are injected into ECS tasks at runtime.
+# Deploys the ECS Fargate cluster, ALB, ACM cert, Route 53 records, task
+# definition, and ECS service. APP_HOSTNAME is known before apply so
+# a single apply pass is sufficient — no double-apply needed.
+#
+# Note: ACM DNS validation requires Route 53 changes to propagate before
+# the cert is issued. Terraform waits via aws_acm_certificate_validation;
+# allow up to 5 minutes for this step on a fresh deploy.
 # ================================================================================================
 echo "NOTE: Deploying ECS Fargate cluster and service..."
 cd 03-ecs || { echo "ERROR: 03-ecs not found."; exit 1; }
@@ -104,18 +111,9 @@ terraform apply -auto-approve \
   -var="s3_bucket_name=${S3_BUCKET}" \
   -var="image_tag=${IMAGE_TAG}" \
   -var="smtp_server=${SMTP_SERVER:-smtp.improvmx.com}" \
-  -var="smtp_port=${SMTP_PORT:-587}"
-
-export ALB_DNS=$(terraform output -raw alb_dns_name)
-
-# Re-apply with APP_HOST now that ALB DNS is known — sets correct password
-# reset URLs in Devise emails. First apply uses empty string (localhost).
-terraform apply -auto-approve \
-  -var="s3_bucket_name=${S3_BUCKET}" \
-  -var="image_tag=${IMAGE_TAG}" \
-  -var="smtp_server=${SMTP_SERVER:-smtp.improvmx.com}" \
   -var="smtp_port=${SMTP_PORT:-587}" \
-  -var="app_host=${ALB_DNS}"
+  -var="app_host=${APP_HOSTNAME}" \
+  -var="app_hostname=${APP_HOSTNAME}"
 
 cd .. || exit
 
@@ -127,7 +125,7 @@ echo "NOTE: Running post-deployment validation..."
 
 echo ""
 echo "NOTE: Deployment complete."
-echo "NOTE: Resume Scorer URL:  http://${ALB_DNS}"
+echo "NOTE: Resume Scorer URL:  https://${APP_HOSTNAME}"
 echo "NOTE: Demo login:         demo@example.com / password123"
 
 # ================================================================================================

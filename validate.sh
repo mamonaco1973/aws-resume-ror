@@ -3,30 +3,16 @@
 # Script Name: validate.sh
 # ================================================================================================
 # Purpose:
-#   Validates that the Resume Scorer ALB is reachable and Rails is responding.
-#   Polls the Devise sign-in page until HTTP 200 is received.
+#   Validates that the Resume Scorer is reachable over HTTPS and Rails is
+#   responding. Polls the Devise sign-in page until HTTP 200 is received.
 #   Fargate tasks need time to start, run migrations, and join the target group.
 # ================================================================================================
 
 MAX_ATTEMPTS=40
 SLEEP_SECONDS=15
-AWS_DEFAULT_REGION="us-east-1"
+APP_URL="https://myjobs-ror.mikes-cloud-solutions.com/users/sign_in"
 
-# ------------------------------------------------------------------------------
-# Retrieve ALB DNS Name
-# ------------------------------------------------------------------------------
-alb_dns=$(aws elbv2 describe-load-balancers \
-  --names "resumescorer-alb" \
-  --query "LoadBalancers[0].DNSName" \
-  --output text \
-  --region "${AWS_DEFAULT_REGION}" 2>/dev/null || true)
-
-if [ -z "$alb_dns" ] || [ "$alb_dns" = "None" ]; then
-  echo "ERROR: Could not find resumescorer-alb. Ensure Phase 3 completed successfully."
-  exit 1
-fi
-
-echo "NOTE: Waiting for http://${alb_dns}/users/sign_in to return HTTP 200..."
+echo "NOTE: Waiting for ${APP_URL} to return HTTP 200..."
 
 # ------------------------------------------------------------------------------
 # Poll Until Healthy
@@ -34,11 +20,11 @@ echo "NOTE: Waiting for http://${alb_dns}/users/sign_in to return HTTP 200..."
 for ((i=1; i<=MAX_ATTEMPTS; i++)); do
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
     --connect-timeout 5 \
-    "http://${alb_dns}/users/sign_in" 2>/dev/null || echo "000")
+    "${APP_URL}" 2>/dev/null || echo "000")
 
   if [ "$STATUS" = "200" ]; then
     echo "NOTE: Resume Scorer is healthy (HTTP 200)."
-    echo "NOTE: URL: http://${alb_dns}"
+    echo "NOTE: URL: https://myjobs-ror.mikes-cloud-solutions.com"
     exit 0
   fi
 

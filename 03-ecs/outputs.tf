@@ -2,8 +2,13 @@
 # Outputs
 # ==============================================================================
 
+output "app_url" {
+  description = "Public HTTPS URL for the resumescorer application"
+  value       = "https://${var.app_hostname}"
+}
+
 output "alb_dns_name" {
-  description = "Public URL for the resumescorer application"
+  description = "Raw ALB DNS name (used internally; prefer app_url)"
   value       = aws_lb.resumescorer.dns_name
 }
 

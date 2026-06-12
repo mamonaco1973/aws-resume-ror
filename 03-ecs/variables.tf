@@ -26,9 +26,20 @@ variable "smtp_port" {
   default     = "587"
 }
 
-# ALB DNS is known only after 03-ecs applies; passed in from apply.sh
 variable "app_host" {
   description = "Public hostname for Devise password reset links"
   type        = string
   default     = ""
+}
+
+variable "app_hostname" {
+  description = "Custom domain for the app (e.g. myjobs-ror.mikes-cloud-solutions.com)"
+  type        = string
+  default     = "myjobs-ror.mikes-cloud-solutions.com"
+}
+
+variable "hosted_zone_name" {
+  description = "Route 53 hosted zone that owns the domain (e.g. mikes-cloud-solutions.com)"
+  type        = string
+  default     = "mikes-cloud-solutions.com"
 }

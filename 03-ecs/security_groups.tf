@@ -4,17 +4,26 @@
 
 # ------------------------------------------------------------------------------
 # ALB Security Group
-# Allows public HTTP (80) inbound; ECS tasks only accept traffic from ALB.
+# Accepts HTTP (80) and HTTPS (443) from the internet.
+# ECS tasks only accept traffic from the ALB, never directly from the internet.
 # ------------------------------------------------------------------------------
 resource "aws_security_group" "alb" {
   name        = "resumescorer-alb-sg"
-  description = "ALB inbound HTTP"
+  description = "ALB inbound HTTP and HTTPS"
   vpc_id      = data.aws_vpc.ecs-vpc.id
 
   ingress {
-    description = "HTTP from internet"
+    description = "HTTP from internet — redirected to HTTPS by ALB listener"
     from_port   = 80
     to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTPS from internet"
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -31,7 +40,7 @@ resource "aws_security_group" "alb" {
 
 # ------------------------------------------------------------------------------
 # ECS Service Security Group
-# Rails runs on port 3000; only ALB is allowed to initiate connections.
+# Rails runs on port 3000; only the ALB is allowed to initiate connections.
 # ------------------------------------------------------------------------------
 resource "aws_security_group" "ecs_service" {
   name        = "resumescorer-ecs-sg"

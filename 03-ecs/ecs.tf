@@ -109,5 +109,8 @@ resource "aws_ecs_service" "resumescorer" {
     container_port   = 3000
   }
 
-  depends_on = [aws_lb_listener.resumescorer]
+  depends_on = [
+    aws_lb_listener.resumescorer_http,
+    aws_lb_listener.resumescorer_https,
+  ]
 }
