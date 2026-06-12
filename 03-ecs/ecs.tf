@@ -54,7 +54,7 @@ resource "aws_ecs_task_definition" "resumescorer" {
         { name = "S3_BUCKET",                value = var.s3_bucket_name },
         { name = "SMTP_SERVER",              value = var.smtp_server },
         { name = "SMTP_PORT",                value = var.smtp_port },
-        { name = "APP_HOST",                 value = var.app_host }
+        { name = "APP_HOST",                 value = local.app_host }
       ]
 
       # Secrets Manager injects these at task start before the container runs
@@ -110,7 +110,8 @@ resource "aws_ecs_service" "resumescorer" {
   }
 
   depends_on = [
-    aws_lb_listener.resumescorer_http,
+    aws_lb_listener.resumescorer_http_redirect,
+    aws_lb_listener.resumescorer_http_forward,
     aws_lb_listener.resumescorer_https,
   ]
 }

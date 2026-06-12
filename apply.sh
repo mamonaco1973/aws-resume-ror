@@ -8,14 +8,18 @@
 # Deployment Phases:
 #   1. Network infrastructure (VPC, RDS, ElastiCache Redis, ECR, S3, Secrets Manager)
 #   2. Docker image build and ECR push
-#   3. ECS Fargate cluster, ALB, ACM cert, Route 53 records, and service deployment
+#   3. ECS Fargate cluster, ALB, optional ACM cert + Route 53, and service deployment
 #   4. Post-deployment validation
 #
 # Requirements:
 #   - AWS CLI v2, Terraform, Docker, jq
 #   - AWS credentials with administrative permissions
 #   - Bedrock model access enabled in us-east-1 for Claude Haiku
-#   - Route 53 hosted zone for mikes-cloud-solutions.com must already exist
+#
+# Optional — custom domain (HTTPS):
+#   export AWS_RESUME_ROR_CUSTOM_DOMAIN="myjobs-ror.example.com"
+#   The Route 53 hosted zone for the parent domain must already exist.
+#   If unset, the app is served over HTTP on the ALB DNS name.
 # ================================================================================================
 
 # -----------------------------------------------------------------------------------------------
@@ -23,7 +27,6 @@
 # -----------------------------------------------------------------------------------------------
 export AWS_DEFAULT_REGION="us-east-1"
 IMAGE_TAG=$(date +%Y%m%d%H%M%S)
-APP_HOSTNAME="myjobs-ror.mikes-cloud-solutions.com"
 set -euo pipefail
 
 # -----------------------------------------------------------------------------------------------
@@ -95,13 +98,13 @@ cd ../.. || exit
 # ================================================================================================
 # Phase 3: ECS Fargate Cluster and Service
 # ================================================================================================
-# Deploys the ECS Fargate cluster, ALB, ACM cert, Route 53 records, task
-# definition, and ECS service. APP_HOSTNAME is known before apply so
-# a single apply pass is sufficient — no double-apply needed.
+# Deploys the ECS Fargate cluster, ALB, task definition, and ECS service.
+# When APP_CUSTOM_DOMAIN is set, also provisions an ACM cert and Route 53
+# records and serves over HTTPS. Without it, the app is served over HTTP
+# on the ALB DNS name — no Route 53 hosted zone required.
 #
-# Note: ACM DNS validation requires Route 53 changes to propagate before
-# the cert is issued. Terraform waits via aws_acm_certificate_validation;
-# allow up to 5 minutes for this step on a fresh deploy.
+# Note: when a custom domain is used, ACM DNS validation can take up to
+# 5 minutes on a fresh deploy. Terraform waits via acm_certificate_validation.
 # ================================================================================================
 echo "NOTE: Deploying ECS Fargate cluster and service..."
 cd 03-ecs || { echo "ERROR: 03-ecs not found."; exit 1; }
@@ -112,8 +115,9 @@ terraform apply -auto-approve \
   -var="image_tag=${IMAGE_TAG}" \
   -var="smtp_server=${SMTP_SERVER:-smtp.improvmx.com}" \
   -var="smtp_port=${SMTP_PORT:-587}" \
-  -var="app_host=${APP_HOSTNAME}" \
-  -var="app_hostname=${APP_HOSTNAME}"
+  -var="custom_domain=${AWS_RESUME_ROR_CUSTOM_DOMAIN:-}"
+
+APP_URL=$(terraform output -raw app_url)
 
 cd .. || exit
 
@@ -125,7 +129,7 @@ echo "NOTE: Running post-deployment validation..."
 
 echo ""
 echo "NOTE: Deployment complete."
-echo "NOTE: Resume Scorer URL:  https://${APP_HOSTNAME}"
+echo "NOTE: Resume Scorer URL:  ${APP_URL}"
 echo "NOTE: Demo login:         demo@example.com / password123"
 
 # ================================================================================================

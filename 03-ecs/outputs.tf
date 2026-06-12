@@ -1,10 +1,24 @@
 # ==============================================================================
+# Locals
+# ==============================================================================
+
+locals {
+  # app_host is the hostname the Rails app uses for password-reset link
+  # generation. When no custom domain is set we fall back to the ALB DNS name.
+  app_host = var.custom_domain != "" ? var.custom_domain : aws_lb.resumescorer.dns_name
+
+  # app_url uses HTTPS when a custom domain (and ACM cert) exists, otherwise
+  # plain HTTP on the ALB DNS name.
+  app_url = var.custom_domain != "" ? "https://${var.custom_domain}" : "http://${aws_lb.resumescorer.dns_name}"
+}
+
+# ==============================================================================
 # Outputs
 # ==============================================================================
 
 output "app_url" {
-  description = "Public HTTPS URL for the resumescorer application"
-  value       = "https://${var.app_hostname}"
+  description = "Public URL for the resumescorer application"
+  value       = local.app_url
 }
 
 output "alb_dns_name" {
